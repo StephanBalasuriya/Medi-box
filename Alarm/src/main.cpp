@@ -8,6 +8,7 @@
 #define LED 19
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
+#define PB_Cancel 23     // Push button cancel pin
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET -1 // Reset pin # (or -1 if sharing Arduino reset pin)
@@ -61,6 +62,7 @@ void setup()
 
   pinMode(Buzzer, OUTPUT);
   pinMode(LED, OUTPUT);
+  pinMode(PB_Cancel, INPUT); // Push button cancel pin
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
@@ -150,6 +152,7 @@ void update_time_with_check_alarm()
 
   if (alarm_enable)
   {
+    bool alarms_diabled = false; // Flag to check if all alarms are disabled
     for (int i = 0; i < n_alarm; i++)
     {
       if (alarm_time[i].alarm_state)
@@ -161,30 +164,50 @@ void update_time_with_check_alarm()
           Serial.println("Alarm Triggered!");
 
           ring_alarm();
+          alarm_time[i].alarm_state = false; // Disable the alarm after it rings
+          alarms_diabled = true;             // Set the flag to true if at least one alarm is enabled
+        }
+        else
+        {
+          alarms_diabled = false; // Set the flag to false if at least one alarm is enabled
         }
       }
     }
+    if (alarms_diabled)
+      alarm_enable = false; // Disable the alarm if all alarms are disabled
+    else
+      alarm_enable = true; // Enable the alarm if at least one alarm is enabled
   }
+  Serial.print("Alarm state: ");
+  Serial.println(alarm_enable ? "ON" : "OFF");
 }
 
 void ring_alarm()
 {
   print_line(" Medicine\n   Time!", 10, 10, 2);
-
-  digitalWrite(LED, HIGH);
-  // Ring the buzzer
-  for (int j = 0; j < 8; j++)
+  bool break_happen = false;
+  while (break_happen == false && digitalRead(PB_Cancel) == HIGH)
   {
+
+    digitalWrite(LED, HIGH);
+    // Ring the buzzer
     for (int i = 0; i < 8; i++)
     {
-      ledcAttachPin(Buzzer, 0);
-      ledcSetup(0, melody[i], 8);
-      ledcWriteTone(0, melody[i]);
+      if (digitalRead(PB_Cancel) == LOW)
+      {
+        delay(200); // Debounce delay
+        break_happen = true;
+        digitalWrite(LED, LOW);
+        ledcWriteTone(0, 0); // Stop sound
+        break;               // Exit the loop if the button is pressed
+      }
+      ledcAttachPin(Buzzer, 0);    // Attach the pin to channel 0
+      ledcSetup(0, melody[i], 8);  // The frequency setup line
+      ledcWriteTone(0, melody[i]); // Play tone at given frequency
       delay(500);
       ledcWriteTone(0, 0); // Stop sound
     }
   }
 
-  digitalWrite(LED, LOW);
   display.clearDisplay();
 }
