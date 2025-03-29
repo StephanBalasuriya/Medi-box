@@ -4,7 +4,8 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-
+#define Buzzer 18
+#define LED 19
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
 
@@ -29,7 +30,7 @@ int days = 0;
 unsigned long timeNow = 0;
 unsigned long timeLast = 0;
 
-bool alarm = true; // true = alarm on, false = alarm off
+bool alarm_enable = true; // true = alarm on, false = alarm off
 // Define the alarm_time_t structure
 struct alarm_time_t
 {
@@ -51,10 +52,15 @@ alarm_time_t alarm_time[n_alarm] = {
     {false, 0, 0, 0} // alarm 2
 };
 
+int melody[] = {262, 294, 330, 349, 392, 440, 494, 523}; // Simple tones
+
 void setup()
 {
   // put your setup code here, to run once:
   Serial.begin(9600);
+
+  pinMode(Buzzer, OUTPUT);
+  pinMode(LED, OUTPUT);
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C))
@@ -99,7 +105,7 @@ void print_time_now()
   display.setTextSize(2);
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0, 0); //(Column , row)
-  display.print("Time : ");
+  display.print("Time Now: ");
   display.setTextSize(2);
   display.setCursor(0, 20); //(Column , row)
   display.print(days);
@@ -141,9 +147,8 @@ void update_time_with_check_alarm()
 {
   update_time();
   print_time_now();
-  Serial.println("Alarm Triggered!");
 
-  if (alarm == true)
+  if (alarm_enable)
   {
     for (int i = 0; i < n_alarm; i++)
     {
@@ -154,9 +159,7 @@ void update_time_with_check_alarm()
         {
           // Trigger the alarm
           Serial.println("Alarm Triggered!");
-          // print_line("Alarm Triggered!", 10, 10, 2);
-          // delay(2000);
-          // alarm = false;
+
           ring_alarm();
         }
       }
@@ -166,6 +169,22 @@ void update_time_with_check_alarm()
 
 void ring_alarm()
 {
-  print_line("Medicine Time!", 10, 10, 2);
-  delay(100000);
+  print_line(" Medicine\n   Time!", 10, 10, 2);
+
+  digitalWrite(LED, HIGH);
+  // Ring the buzzer
+  for (int j = 0; j < 8; j++)
+  {
+    for (int i = 0; i < 8; i++)
+    {
+      ledcAttachPin(Buzzer, 0);
+      ledcSetup(0, melody[i], 8);
+      ledcWriteTone(0, melody[i]);
+      delay(500);
+      ledcWriteTone(0, 0); // Stop sound
+    }
+  }
+
+  digitalWrite(LED, LOW);
+  display.clearDisplay();
 }
