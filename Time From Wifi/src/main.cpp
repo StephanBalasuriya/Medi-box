@@ -637,6 +637,7 @@ void check_temperature_humidity()
   display2.print(humidity);
   display2.print(" %");
 
+
   if (temperature > 35.0)
   {
     tone(Buzzer, melody[7]); // Attach the pin to channel 0
