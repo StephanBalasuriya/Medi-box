@@ -73,8 +73,8 @@ void setup()
 {
   Serial.begin(9600);
 
-  Wire.begin(I2C1_SDA, I2C1_SCL);  // I2C1 for OLED2
-  Wire1.begin(I2C0_SDA, I2C0_SCL); // I2C0 for OLED1
+  Wire1.begin(I2C1_SDA, I2C1_SCL);  // I2C1 for OLED2
+  Wire.begin(I2C0_SDA, I2C0_SCL); // I2C0 for OLED1
 
   pinMode(Buzzer, OUTPUT);
   pinMode(LED, OUTPUT);
