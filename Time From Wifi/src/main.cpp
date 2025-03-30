@@ -5,6 +5,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <DHTesp.h>
+#include <WiFi.h>
 
 #define Buzzer 18
 #define LED 19
@@ -32,6 +33,10 @@ DHTesp dhtSensor; // Create a DHT22 object
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire1, OLED_RESET);
 Adafruit_SSD1306 display2(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+#define NTP_SERVER "pool.ntp.org"
+#define UTC_OFFSET 0
+#define UTC_OFFSET_DST 0
+
 // functions Declaration
 void print_line(String text, int column, int row, int text_size);
 void print_time_now();
@@ -45,6 +50,7 @@ void run_mode(int mode);
 void set_time();
 void set_alarm(int n_alarm);
 void check_temperature_humidity();
+void spinner();
 
 // Global Variables
 int hours = 0;
@@ -121,7 +127,20 @@ void setup()
   // the library initializes this with an Adafruit splash screen.
   display.display();
   display2.display();
-  delay(2000); // Pause for 2 seconds
+  delay(500); // Pause for 2 seconds
+  WiFi.begin("Wokwi-GUEST", "", 6);
+
+  while (WiFi.status() != WL_CONNECTED)
+  {
+    delay(250);
+    display.clearDisplay();
+    print_line("Connecting to\n  WiFi...", 10, 10, 2);
+    spinner();
+  }
+
+  display.clearDisplay();
+  print_line("Connected to\n  WiFi", 10, 10, 2);
+  configTime(UTC_OFFSET, UTC_OFFSET_DST, NTP_SERVER);
 
   // Clear the buffer
   display.clearDisplay();
@@ -176,27 +195,43 @@ void print_time_now()
 
 void update_time()
 {
-  timeNow = millis();
-  if (timeNow - timeLast > 1000)
-  {
-    timeLast = timeNow;
-    seconds++;
-    if (seconds > 59)
-    {
-      seconds = 0;
-      minutes++;
-      if (minutes > 59)
-      {
-        minutes = 0;
-        hours++;
-        if (hours > 23)
-        {
-          hours = 0;
-          days++;
-        }
-      }
-    }
-  }
+  // timeNow = millis();
+  // if (timeNow - timeLast > 1000)
+  // {
+  //   timeLast = timeNow;
+  //   seconds++;
+  //   if (seconds > 59)
+  //   {
+  //     seconds = 0;
+  //     minutes++;
+  //     if (minutes > 59)
+  //     {
+  //       minutes = 0;
+  //       hours++;
+  //       if (hours > 23)
+  //       {
+  //         hours = 0;
+  //         days++;
+  //       }
+  //     }
+  //   }
+  // }
+  struct tm timeinfo;
+  getLocalTime(&timeinfo);
+
+  char timeHour[3];
+  strftime(timeHour, 3, "%H", &timeinfo);
+  hours = atoi(timeHour);
+  char timeMinute[3];
+  strftime(timeMinute, 3, "%M", &timeinfo); 
+  minutes = atoi(timeMinute);
+  char timeSecond[3];
+  strftime(timeSecond, 3, "%S", &timeinfo);
+  seconds = atoi(timeSecond);
+  char timeDay[3];
+  strftime(timeDay, 3, "%d", &timeinfo);
+  days = atoi(timeDay);
+  Serial.println("Time Now: " + String(days) + ":" + String(hours) + ":" + String(minutes) + ":" + String(seconds));
 }
 
 void update_time_with_check_alarm()
@@ -637,10 +672,9 @@ void check_temperature_humidity()
   display2.print(humidity);
   display2.print(" %");
 
-
   if (temperature > 35.0)
   {
-    tone(Buzzer, melody[7]); // Attach the pin to channel 0
+    tone(Buzzer, melody[7]); // Attach the pin to channel 7
     digitalWrite(LED, HIGH); // Turn on LED if temperature or humidity exceeds threshold
     delay(1000);             // Keep LED on for a second
     digitalWrite(LED, LOW);
@@ -649,7 +683,7 @@ void check_temperature_humidity()
   }
   else if (temperature < 25.0)
   {
-    tone(Buzzer, melody[7]); // Attach the pin to channel 0
+    tone(Buzzer, melody[7]); // Attach the pin to channel 7
     digitalWrite(LED, HIGH); // Turn on LED if temperature or humidity exceeds threshold
     delay(1000);             // Keep LED on for a second
     digitalWrite(LED, LOW);
@@ -658,7 +692,7 @@ void check_temperature_humidity()
   }
   if (humidity < 20)
   {
-    tone(Buzzer, melody[7]); // Attach the pin to channel 0
+    tone(Buzzer, melody[7]); // Attach the pin to channel 7
     digitalWrite(LED, HIGH); // Turn on LED if temperature or humidity exceeds threshold
     delay(1000);             // Keep LED on for a second
     digitalWrite(LED, LOW);
@@ -667,7 +701,7 @@ void check_temperature_humidity()
   }
   else if (humidity > 40)
   {
-    tone(Buzzer, melody[7]); // Attach the pin to channel 0
+    tone(Buzzer, melody[7]); // Attach the pin to channel 7
     digitalWrite(LED, HIGH); // Turn on LED if temperature or humidity exceeds threshold
     delay(1000);             // Keep LED on for a second
     digitalWrite(LED, LOW);
@@ -676,4 +710,16 @@ void check_temperature_humidity()
   }
 
   display2.display();
+}
+
+void spinner()
+{
+  static int8_t counter = 0;
+  const char *glyphs = "\xa1\xa5\xdb";
+  display.setCursor(15, 1);
+  display.print(glyphs[counter++]);
+  if (counter == strlen(glyphs))
+  {
+    counter = 0;
+  }
 }
