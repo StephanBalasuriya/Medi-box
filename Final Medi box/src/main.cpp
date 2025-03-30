@@ -34,15 +34,15 @@ bool alarm_enable = true;
 struct alarm_time_t
 {
   bool alarm_state;
-  int hours, minutes, seconds;
+  int hours, minutes;
   bool snoozed;
   unsigned long snooze_time;
 };
 
 constexpr int n_alarm = 2;
 alarm_time_t alarm_time[n_alarm] = {
-    {true, 0, 0, 5, false, 0}, // Alarm 1
-    {false, 0, 0, 0, false, 0} // Alarm 2
+    {true, 0, 0, false, 0}, // Alarm 1
+    {false, 0, 0, false, 0} // Alarm 2
 };
 
 int melody[] = {262, 294, 330, 349, 392, 440, 494, 523};
@@ -73,8 +73,8 @@ void setup()
 {
   Serial.begin(9600);
 
-  Wire1.begin(I2C1_SDA, I2C1_SCL);  // I2C1 for OLED2
-  Wire.begin(I2C0_SDA, I2C0_SCL); // I2C0 for OLED1
+  Wire1.begin(I2C1_SDA, I2C1_SCL); // I2C1 for OLED2
+  Wire.begin(I2C0_SDA, I2C0_SCL);  // I2C0 for OLED1
 
   pinMode(Buzzer, OUTPUT);
   pinMode(LED, OUTPUT);
@@ -223,8 +223,7 @@ void update_time_with_check_alarm()
     {
       if (alarm_time[i].alarm_state)
       {
-        if (alarm_time[i].hours == hours && alarm_time[i].minutes == minutes &&
-            alarm_time[i].seconds == seconds && !alarm_time[i].snoozed)
+        if (alarm_time[i].hours == hours && alarm_time[i].minutes == minutes && !alarm_time[i].snoozed)
         {
           Serial.println("Alarm " + String(i) + " Triggered!");
           ring_alarm(i);
@@ -232,8 +231,7 @@ void update_time_with_check_alarm()
         if (alarm_time[i].snoozed && millis() - alarm_time[i].snooze_time >= 300000)
         { // 5 min snooze
           alarm_time[i].snoozed = false;
-          if (alarm_time[i].hours == hours && alarm_time[i].minutes == minutes &&
-              alarm_time[i].seconds == seconds)
+          if (alarm_time[i].hours == hours && alarm_time[i].minutes == minutes)
           {
             ring_alarm(i);
           }
@@ -440,34 +438,6 @@ void set_alarm(int n_alarm)
     else if (pressed == PB_OK)
     {
       alarm_time[n_alarm].minutes = temp_minutes;
-      delay(100);
-      break;
-    }
-    else if (pressed == PB_Cancel)
-    {
-      delay(100);
-      return;
-    }
-  }
-
-  int temp_seconds = alarm_time[n_alarm].seconds;
-  while (true)
-  {
-    print_line(display, "Alarm " + String(n_alarm + 1) + "\nSec: " + String(temp_seconds), 10, 10, 2);
-    int pressed = wait_for_button_press();
-    if (pressed == PB_Up)
-    {
-      temp_seconds = (temp_seconds + 1) % 60;
-      delay(100);
-    }
-    else if (pressed == PB_Down)
-    {
-      temp_seconds = (temp_seconds - 1 + 60) % 60;
-      delay(100);
-    }
-    else if (pressed == PB_OK)
-    {
-      alarm_time[n_alarm].seconds = temp_seconds;
       alarm_time[n_alarm].alarm_state = true;
       alarm_time[n_alarm].snoozed = false;
       alarm_enable = true;
@@ -503,10 +473,6 @@ void view_alarms()
       if (alarm_time[i].minutes < 10)
         display.print("0");
       display.print(alarm_time[i].minutes);
-      display.print(":");
-      if (alarm_time[i].seconds < 10)
-        display.print("0");
-      display.print(alarm_time[i].seconds);
     }
   }
   display.display();
