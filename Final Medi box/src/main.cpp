@@ -550,7 +550,7 @@ void check_temperature_humidity()
     noTone(Buzzer);
     digitalWrite(LED, LOW);
     delay(500);
-    print_line(display2, "Warning!\nTemp/Hum\nOut of Range", 10, 10, 2);
+    print_line(display2, "Warning!\nTemp/Hum\nOut of Range", 10, 00, 2);
     delay(1000);
   }
   display2.display();
